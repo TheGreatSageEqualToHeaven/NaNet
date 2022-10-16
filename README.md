@@ -6,32 +6,32 @@ A small, type-checked networking library for Roblox
 ```lua
 function NaNet.CreateRemoteEvent(Name: string, Parent: Instance): NetworkObject
 ```
-Creates a network object which lets you use `OnEvent` and creates a `RemoteEvent` in the passed parent instance.
+Creates a `NetworkEventObject` which lets you use `OnEvent` and `OnTypedEvent` and creates a `RemoteEvent` in the passed parent instance.
 
 ```lua
 function NaNet.CreateRemoteFunction(Name: string, Parent: Instance): NetworkObject
 ```
-Creates a network object which lets you use `OnInvoke` and creates a `RemoteFunction` in the passed parent instance.
+Creates a `NetworkFunctionObject` which lets you use `OnInvoke` and `OnTypedEvent` and creates a `RemoteFunction` in the passed parent instance.
 
 ```lua
 function NetworkObject.OnTypedEvent(self: NetworkObject, parameters: {NetworkParameter}, listener)
 ```
-A `NetworkObject`'s OnEvent function when created with `CreateRemoteEvent`, lets you connect a listener with type-checked parameters
+A `NetworkEventObject`'s `OnEvent` function which lets you connect a listener with type-checked parameters
 
 ```lua
 function NetworkObject.OnEvent(self: NetworkObject, listener)
 ```
-A `NetworkObject`'s OnEvent function when created with `CreateRemoteEvent`, lets you connect a listener without type-checked parameters
+A `NetworkEventObject`'s OnEvent function which lets you connect a listener without type-checked parameters
 
 ```lua
 function NetworkObject.OnTypedInvoke(self: NetworkObject, parameters: {NetworkParameter}, listener) 
 ```
-A `NetworkObject`'s OnInvoke function when created with `CreateRemoteFunction`, lets you set a listener with type-checked parameters
+A `NetworkFunctionObject`'s `OnInvoke` function which lets you set a listener with type-checked parameters
 
 ```lua
 function NetworkObject.OnInvoke(self: NetworkObject, listener) 
 ```
-A `NetworkObject`'s OnInvoke function when created with `CreateRemoteFunction`, lets you set a listener without type-checked parameters
+A `NetworkFunctionObject`'s `OnInvoke` function which lets you set a listener without type-checked parameters
 
 ```lua
 function NaNet.ConnectTypedEvent(remote: RemoteEvent, parameters: {NetworkParameter}, listener)
