@@ -73,5 +73,5 @@ NaNet.DataStoreString --/* Special string type that is safe to save in a data st
 NaNet.ConstrainedReal(maxLength: number) --/* Real with a limited range */
 NaNet.ConstrainedReal(minLength: number, maxLength: number)
 NaNet.InstanceOfClass(name: NetworkParameter) --/* Instance type that only lets instances with a specific class through */
-NaNet.TypedVararg(type: NetworkParameter) --/* Special structure type that acts as a primitive, all varargs will be type-checked */
+NaNet.TypedVararg(_type: NetworkParameter) --/* Special structure type that acts as a primitive, all varargs will be type-checked */
 ```
