@@ -60,6 +60,7 @@ NaNet.Array --/* Basic array type, accepts any array with an ordered list */
 NaNet.Nil --/* Basic nil type, a lot of jank comes with this type so I recommend against using it */
 NaNet.Real --/* Basic real type, any number that is real, rational */
 NaNet.Vararg --/* Basic vararg type, if placed at the end of the parameter list the vararg 
+NaNet.Any --/* Basic any type, disables type-checking for the specific parameter */
 ```
 
 ### Structure Types
@@ -74,4 +75,16 @@ NaNet.ConstrainedReal(maxLength: number) --/* Real with a limited range */
 NaNet.ConstrainedReal(minLength: number, maxLength: number)
 NaNet.InstanceOfClass(name: NetworkParameter) --/* Instance type that only lets instances with a specific class through */
 NaNet.TypedVararg(_type: NetworkParameter) --/* Special structure type that acts as a primitive, all varargs will be type-checked */
+```
+
+### Tree types
+```lua
+NaNet.DictionaryTree --/* Dictionary tree type, allows for type-checking an entire dictionary */
+NaNet.KeyValuePair --/* Key and value pair for dictionary trees, the value can be set to a DictionaryTree */
+NaNet.OptionalKeyValuePair --/* An optional version of the KeyValuePair */
+```
+
+### Extra
+```lua
+NaNet.Value --/* Buffer in NaNet for any static value that isn't a type */
 ```
