@@ -79,12 +79,12 @@ NaNet.TypedVararg(_type: NetworkParameter) --/* Special structure type that acts
 
 ### Tree types
 ```lua
-NaNet.DictionaryTree --/* Dictionary tree type, allows for type-checking an entire dictionary */
-NaNet.KeyValuePair --/* Key and value pair for dictionary trees, the value can be set to a DictionaryTree */
-NaNet.OptionalKeyValuePair --/* An optional version of the KeyValuePair */
+NaNet.DictionaryTree(tree: {KeyValuePair | OptionalKeyValuePair}) --/* Dictionary tree type, allows for type-checking an entire dictionary */
+NaNet.KeyValuePair(keyValue: string, valueType: NetworkParameter) --/* Key and value pair for dictionary trees, the value can be set to a DictionaryTree */
+NaNet.OptionalKeyValuePair(keyValue: string, valueType: NetworkParameter) --/* An optional version of the KeyValuePair */
 ```
 
 ### Extra
 ```lua
-NaNet.Value --/* Buffer in NaNet for any static value that isn't a type */
+NaNet.Value(value) --/* Buffer in NaNet for any static value that isn't a type */
 ```
