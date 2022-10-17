@@ -57,11 +57,18 @@ export type NaNet = {
 	
 	Value: (any) -> NetworkParameter,
 
-	--/* API */
+	--/* Wrapper API */
 	CreateRemoteEvent: ((string, Instance) -> NetworkEventObject),
 	CreateRemoteFunction: ((string, Instance) -> NetworkFunctionObject),
 	ConnectTypedEvent: ((RemoteEvent, {NetworkParameter}, any) -> ()),
-	ConnectTypedInvoke: ((RemoteFunction, {NetworkParameter}, any) -> ())
+	ConnectTypedInvoke: ((RemoteFunction, {NetworkParameter}, any) -> ()),
+	
+	--/* Standalone API */
+	IsArray: ({any}) -> boolean,
+	IsInteger: (number) -> boolean,
+	IsReal: (number) -> boolean,
+	IsRealWithinBoundary: (number, number, number?) -> boolean,
+	IsStringSafeForDataStore: (string) -> boolean
 }
 
 local function CreateRangeType(enum, minLength, maxLength, typeObject: NetworkParameter?): NetworkParameter
@@ -499,7 +506,7 @@ local NaNet: NaNet = {
 	Union = function() error("Not implemented") end,
 
 
-	--/* API */
+	--/* Wrapper API */
 	CreateRemoteEvent = function(Name, Parent)
 		assert(Name == "string", "NaNet.CreateRemoteEvent expected `string` for argument #1")
 		assert(typeof(Parent) == "Instance", "NaNet.CreateRemoteEvent expected `Instance` for argument #2")
@@ -545,6 +552,75 @@ local NaNet: NaNet = {
 		remote.OnServerInvoke = function(player, ...)
 			return listener(TypecheckParameters(parameters, ...), player, ...)
 		end
+	end,
+	
+	--/* Standalone API */
+	IsArray = function(parameter)
+		if type(parameter) ~= "table" then 
+			return false
+		end
+
+		local t = table.pack(table.unpack(parameter)) --/* Unpack only unpacks the array part so we can use this to exclude anything else */ 
+		local existingParameters = 0
+		for i,v in ipairs(t) do  --/* ipairs will stop at nil */ 
+			existingParameters += 1
+		end
+
+		if existingParameters ~= t.n then 
+			return false
+		end
+		
+		return true
+	end,
+	IsInteger = function(parameter)
+		if type(parameter) ~= "number" then
+			return false
+		end
+		if math.floor(parameter) ~= parameter then 
+			return false
+		end
+		
+		return true
+	end,
+	IsReal = function(parameter)
+		if type(parameter) ~= "number" then 
+			return false
+		end
+		if parameter ~= parameter then 
+			return false
+		end
+		
+		return true
+	end,
+	IsRealWithinBoundary = function(parameter, minLength, maxLength)
+		if type(parameter) ~= "number" then 
+			return false
+		end
+		if parameter ~= parameter then 
+			return false
+		end
+		if maxLength then
+			if (parameter < minLength) or (parameter > maxLength) then 
+				return false
+			end
+		else 
+			if (parameter < 0) or (parameter > minLength) then 
+				return false
+			end
+		end
+
+		
+		return true
+	end,
+	IsStringSafeForDataStore = function(parameter)
+		if type(parameter) ~= "string" then 
+			return false 
+		end
+		if (utf8.len(parameter) == nil) or (#parameter > 65536) then
+			return false
+		end
+		
+		return true
 	end
 }
 
