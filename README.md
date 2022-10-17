@@ -1,7 +1,7 @@
 # NaNet "Not another Networking library!"
 A small, type-checked networking library for Roblox
 
-# API
+# Wrapper API
 
 ```lua
 function NaNet.CreateRemoteEvent(Name: string, Parent: Instance): NetworkObject
@@ -42,6 +42,28 @@ Accepts a `RemoteEvent` and connects a listener with type-checked parameters
 function NaNet.ConnectTypedInvoke(remote: RemoteFunction, parameters: {NetworkParameter}, listener)
 ```
 Accepts a `RemoteFunction` and connects a listener with type-checked parameters
+
+# Standalone API
+
+```lua
+function NaNet.IsArray(parameter: {any})
+```
+
+```lua
+function NaNet.IsInteger(parameter: number)
+```
+
+```lua
+function NaNet.IsReal(parameter: number)
+```
+
+```lua
+function NaNet.IsRealWithinBoundary(parameter: number, minLength: number, maxLength: number)
+```
+
+```lua
+function NaNet.IsStringSafeForDataStore(parameter: string) 
+```
 
 # Types
 All types in `NaNet` are typed with `NetworkParameter`. 
