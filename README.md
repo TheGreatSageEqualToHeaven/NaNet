@@ -75,6 +75,11 @@ NaNet.ConstrainedReal(maxLength: number) --/* Real with a limited range */
 NaNet.ConstrainedReal(minLength: number, maxLength: number)
 NaNet.InstanceOfClass(name: NetworkParameter) --/* Instance type that only lets instances with a specific class through */
 NaNet.TypedVararg(_type: NetworkParameter) --/* Special structure type that acts as a primitive, all varargs will be type-checked */
+NaNet.TypedArray(_type: NetworkParameter) --/* Accepts any ordered array with a specific type */
+NaNet.ConstrainedArray(minLength: number) --/* Accepts any ordered array with a size limit */
+NaNet.ConstrainedArray(minLength: number, maxLength: number)
+NaNet.ConstrainedArray(_type: NetworkParameter, minLength: number) --/* Accepts any ordered array with a specific type and size limit */
+NaNet.ConstrainedArray(_type: NetworkParameter, minLength: number, maxLength: number)
 ```
 
 ### Tree types
