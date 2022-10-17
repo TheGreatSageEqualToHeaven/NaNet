@@ -437,7 +437,7 @@ local NaNet: NaNet = {
 			TypeObject = _type
 		}
 	end,
-	ConstrainedArray = function(minLength, maxLength)
+	ConstrainedArray = function(minLength, maxLength) --/* Accepts any ordered array with a size limit */
 		assert(type(minLength) == "number", "NaNet.ConstraintedArray expected `number` for argument #1")
 		if maxLength then 
 			assert(type(maxLength) == "number", "NaNet.ConstraintedArray expected `number` for argument #2")
@@ -445,7 +445,7 @@ local NaNet: NaNet = {
 		
 		return CreateRangeType(108, minLength, maxLength)
 	end,
-	ConstrainedAndTypedArray = function(_type, minLength, maxLength)
+	ConstrainedAndTypedArray = function(_type, minLength, maxLength) --/* Accepts any ordered array with a specific type and size limit */
 		assert((type(_type) == "table") and (_type.Enum), "NaNet.ConstraintedAndTypedArray expected `NaNet.NetworkParameter` for argument #1")
 		
 		assert(type(minLength) == "number", "NaNet.ConstraintedArray expected `number` for argument #2")
