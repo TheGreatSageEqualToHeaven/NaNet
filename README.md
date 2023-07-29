@@ -119,5 +119,7 @@ NaNet.OptionalKeyValuePair(keyValue: string, valueType: NetworkParameter) --/* A
 
 ### Extra
 ```lua
-NaNet.Value(value) --/* Buffer in NaNet for any static value that isn't a type */
+NaNet.Value(value: any) --/* Allows any static value, can be used for remote keys and similar */
+NaNet.Union(_type: NetworkParameter, merger: NetworkParameter) --/* Allows multiple types as one parameter, can be used on two unions to merge both. */
+NaNet.Nullable(_type: NetworkParameter) --/* Allows a type to be nullable. */
 ```
