@@ -108,6 +108,7 @@ NaNet.ConstrainedArray(minLength: number) --/* Accepts any ordered array with a 
 NaNet.ConstrainedArray(minLength: number, maxLength: number)
 NaNet.ConstrainedArray(_type: NetworkParameter, minLength: number) --/* Accepts any ordered array with a specific type and size limit */
 NaNet.ConstrainedArray(_type: NetworkParameter, minLength: number, maxLength: number)
+NaNet.TypeOf(__type: string) --/* Accepts a type name, will compare parameters with `typeof` result and the type name */
 ```
 
 ### Tree types
