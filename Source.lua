@@ -12,6 +12,7 @@ export type NetworkParameter = {
 	ValueType: NetworkParameter?,
 
 	Value: any?,
+	TypeObjects: { NetworkParameter }?
 }
 
 export type NetworkEventObject = {
@@ -50,19 +51,21 @@ export type NaNet = {
 	TypedArray: (NetworkParameter) -> NetworkParameter,
 	ConstrainedArray: (number, number?) -> NetworkParameter,
 	ConstrainedAndTypedArray: (NetworkParameter, number, number?) -> NetworkParameter,
-	
+
 	DictionaryTree: ({NetworkParameter}) -> NetworkParameter,
 	KeyValuePair: (string, NetworkParameter) -> NetworkParameter,
 	OptionalKeyValuePair: (string, NetworkParameter) -> NetworkParameter,
-	
+
 	Value: (any) -> NetworkParameter,
+	Union: (NetworkParameter, NetworkParameter) -> NetworkParameter,
+	Nullable: (NetworkParameter) -> NetworkParameter,
 
 	--/* Wrapper API */
 	CreateRemoteEvent: ((string, Instance) -> NetworkEventObject),
 	CreateRemoteFunction: ((string, Instance) -> NetworkFunctionObject),
 	ConnectTypedEvent: ((RemoteEvent, {NetworkParameter}, any) -> ()),
 	ConnectTypedInvoke: ((RemoteFunction, {NetworkParameter}, any) -> ()),
-	
+
 	--/* Standalone API */
 	IsArray: ({any}) -> boolean,
 	IsInteger: (number) -> boolean,
@@ -133,8 +136,8 @@ local function TypecheckParameters(parameters: {NetworkParameter}, ...)
 
 		local _enum = _type.Enum
 
-		if parameter == InternalUserdata then --/* Nil */
-			if _enum == 9 then 
+		if parameter == InternalUserdata then 
+			if (_enum == 9) or (_enum == 12) or (_enum == 1002) then --/* Nil, Any, Nullable */
 				continue;
 			end
 
@@ -157,6 +160,12 @@ local function TypecheckParameters(parameters: {NetworkParameter}, ...)
 				return false
 			end
 			if math.floor(parameter) ~= parameter then 
+				return false
+			end
+			if parameter == math.huge then
+				return false 
+			end
+			if parameter == -math.huge then 
 				return false
 			end
 		elseif _enum == 4 then --/* Boolean */
@@ -200,12 +209,32 @@ local function TypecheckParameters(parameters: {NetworkParameter}, ...)
 			if parameter ~= parameter then 
 				return false
 			end
+			if parameter == math.huge then
+				return false 
+			end
+			if parameter == -math.huge then 
+				return false
+			end
 		elseif _enum == 11 then --/* Vararg*/
 			return true --/* This vararg is untyped so there is nothing left to do */
 
-		--/* Any (12) doesn't need handling apart from where nil is supported */
-
-		--/* Structure types */
+			--/* Any (12) doesn't need handling apart from where nil is supported */
+		elseif _enum == 13 then --/* ExtendedReal */	
+			if type(parameter) ~= "number" then 
+				return false
+			end
+			if parameter ~= parameter then 
+				return false
+			end
+		elseif _enum == 14 then --/* ExtendedInteger */	
+			if type(parameter) ~= "number" then 
+				return false
+			end
+			if parameter ~= parameter then 
+				return false
+			end
+		
+			--/* Structure types */
 		elseif _enum == 101 then --/* ConstrainedString */
 			if type(parameter) ~= "string" then
 				return false
@@ -244,13 +273,13 @@ local function TypecheckParameters(parameters: {NetworkParameter}, ...)
 			if parameter:IsA(_type.Class :: string) == false then 
 				return false
 			end
-			
-		--/* Typed varargs (107) dont need handling apart from the snippet below */
+
+			--/* Typed varargs (107) dont need handling apart from the snippet below */
 		elseif _enum == 107 then --/* TypedArray */
 			if type(parameter) ~= "table" then 
 				return false
 			end
-		
+
 			local t = table.pack(table.unpack(parameter)) --/* Unpack only unpacks the array part so we can use this to exclude anything else */ 
 			local existingParameters = 0
 			for i,v in ipairs(t) do  --/* ipairs will stop at nil */ 
@@ -260,9 +289,9 @@ local function TypecheckParameters(parameters: {NetworkParameter}, ...)
 			if existingParameters ~= t.n then 
 				return false
 			end
-			
+
 			local arrayParameters = table.create(existingParameters, _type.TypeObject)
-			
+
 			if TypecheckParameters(arrayParameters, table.unpack(t)) == false then 
 				return false
 			end
@@ -280,7 +309,7 @@ local function TypecheckParameters(parameters: {NetworkParameter}, ...)
 			if existingParameters ~= t.n then 
 				return false
 			end
-			
+
 			if (existingParameters < (_type.MinLength :: number)) or (existingParameters > (_type.MaxLength :: number)) then
 				return false
 			end 
@@ -302,14 +331,14 @@ local function TypecheckParameters(parameters: {NetworkParameter}, ...)
 			if (existingParameters < (_type.MinLength :: number)) or (existingParameters > (_type.MaxLength :: number)) then
 				return false
 			end 
-			
+
 			local arrayParameters = table.create(existingParameters, _type.TypeObject)
-			
+
 			if TypecheckParameters(arrayParameters, table.unpack(t)) == false then 
 				return false
 			end
-			
-		--/* Tree types */
+
+			--/* Tree types */
 		elseif _enum == 501 then --/* DictionaryTree */
 			if type(parameter) ~= "table" then 
 				return false
@@ -319,7 +348,7 @@ local function TypecheckParameters(parameters: {NetworkParameter}, ...)
 
 			for _, KeyValuePair in (_type.Tree :: {NetworkParameter}) do
 				local value = parameter[KeyValuePair.KeyValue]
-			
+
 				if (value == nil) and (KeyValuePair.Enum ~= 503) then --/* 503 is the optional KeyValuePair */ 
 					return false
 				end
@@ -328,7 +357,33 @@ local function TypecheckParameters(parameters: {NetworkParameter}, ...)
 				table.insert(values, value)
 			end
 
-			if TypecheckParameters((dictionaryParameters :: {NetworkParameter}), table.unpack(values)) == false then --/* Type checks table values 
+			if TypecheckParameters((dictionaryParameters :: {NetworkParameter}), table.unpack(values)) == false then --/* Type checks table values */
+				return false
+			end
+			
+			--/* Special types */
+		elseif _enum == 1000 then --/* Value */
+			if _type.Value ~= parameter then
+				return false
+			end
+		elseif _enum == 1001 then --/* Union */
+			local types = _type.TypeObjects
+			
+			local safe = false 
+			
+			for i,v in (types :: { NetworkParameter }) do 
+				safe = TypecheckParameters({v}, parameter)
+				
+				if safe then
+					break
+				end
+			end
+			
+			if not safe then
+				return false
+			end
+		elseif _enum == 1002 then --/* Nullable */
+			if TypecheckParameters({ _type.TypeObject :: NetworkParameter }, parameter) == false then  
 				return false
 			end
 		end
@@ -343,7 +398,7 @@ local function TypecheckParameters(parameters: {NetworkParameter}, ...)
 		local _nextEnum = _nextParameter.Enum
 
 		if _next == nil then 
-			if (_nextEnum == 9) or (_nextEnum == 12) then
+			if (_nextEnum == 9) or (_nextEnum == 12) or (_nextEnum == 1002) then --/* Nil, Any, Nullable */
 				packed[i+1] = InternalUserdata		
 				continue
 			end
@@ -355,6 +410,8 @@ local function TypecheckParameters(parameters: {NetworkParameter}, ...)
 				if TypecheckParameters(varargParameters, table.unpack(t)) == false then --/* Type checks varargs */
 					return false
 				end
+				
+				return true
 			end
 		end
 	end
@@ -393,9 +450,11 @@ local NaNet: NaNet = {
 	UserData = table.freeze{ Enum = 7 }, --/* Basic userdata type, a useless type in many cases */
 	Array = table.freeze{ Enum = 8 }, --/* Basic array type, accepts any array with an ordered list */
 	Nil = table.freeze{ Enum = 9}, --/* Basic nil type, a lot of jank comes with this type so I recommend against using it */
-	Real = table.freeze{ Enum = 10 }, --/* Basic real type, any number that is real, rational */
+	Real = table.freeze{ Enum = 10 }, --/* Basic real type, accepts any number that is real */
 	Vararg = table.freeze{ Enum = 11 }, --/* Basic vararg type, if placed at the end of the parameter list the vararg 
 	Any = table.freeze{ Enum = 12 }, --/* Basic any type, disables type-checking for the specific parameter */
+	ExtendedReal = table.freeze{ Enum = 13 }, --/* Basic extended real type, accepts any number that is an extended real (real, with infinities) */
+	ExtendedInteger = table.freeze{ Enum = 14 }, --/* Basic extended integer type, accepts any number that is an extended integer (integer, with infinities) */
 
 	--/* Structure types 101 - 500 */
 	ConstrainedString = function(minLength, maxLength) --/* String with a limited length */
@@ -403,7 +462,7 @@ local NaNet: NaNet = {
 		if maxLength then 
 			assert(type(maxLength) == "number", "NaNet.ConstrainedString expected `number` for argument #2")
 		end
-		
+
 		return CreateRangeType(101, minLength, maxLength)
 	end,
 	ConstrainedDouble = function(minLength, maxLength) --/* Double with a limited range */
@@ -411,7 +470,7 @@ local NaNet: NaNet = {
 		if maxLength then
 			assert(type(maxLength) == "number", "NaNet.ConstrainedDouble expected `number` for argument #2")
 		end
-		
+
 		return CreateRangeType(102, minLength, maxLength)
 	end,
 	DataStoreString = table.freeze{ Enum = 103 }, --/* Special string type that is safe to save in a data store */
@@ -420,17 +479,17 @@ local NaNet: NaNet = {
 		if maxLength then 
 			assert(type(maxLength) == "number", "NaNet.ConstrainedReal expected `number` for argument #2")
 		end
-		
+
 		return CreateRangeType(104, minLength, maxLength)
 	end,
 	InstanceOfClass = function(name) --/* Instance type that only lets instances with a specific class through */
 		assert(type(name) == "string", "NaNet.InstanceOfClass expected `string` for argument #1")
-		
+
 		return table.freeze{ Enum = 105, Class = name }
 	end,
 	TypedVararg = function(_type) --/* Special structure type that acts as a primitive, all varargs will be type-checked */
 		assert((type(_type) == "table") and (_type.Enum), "NaNet.DictionaryTree expected `NaNet.NetworkParameter` for argument #1")
-		
+
 		return table.freeze{
 			Enum = 106,
 			TypeObject = _type
@@ -438,7 +497,7 @@ local NaNet: NaNet = {
 	end,
 	TypedArray = function(_type) --/* Accepts any ordered array with a specific type */
 		assert((type(_type) == "table") and (_type.Enum), "NaNet.TypedArray expected `NaNet.NetworkParameter` for argument #1")
-		
+
 		return table.freeze{
 			Enum = 107,
 			TypeObject = _type
@@ -449,12 +508,12 @@ local NaNet: NaNet = {
 		if maxLength then 
 			assert(type(maxLength) == "number", "NaNet.ConstraintedArray expected `number` for argument #2")
 		end
-		
+
 		return CreateRangeType(108, minLength, maxLength)
 	end,
 	ConstrainedAndTypedArray = function(_type, minLength, maxLength) --/* Accepts any ordered array with a specific type and size limit */
 		assert((type(_type) == "table") and (_type.Enum), "NaNet.ConstraintedAndTypedArray expected `NaNet.NetworkParameter` for argument #1")
-		
+
 		assert(type(minLength) == "number", "NaNet.ConstraintedArray expected `number` for argument #2")
 		if maxLength then 
 			assert(type(maxLength) == "number", "NaNet.ConstraintedArray expected `number` for argument #3")
@@ -469,13 +528,13 @@ local NaNet: NaNet = {
 		
 		return table.freeze{
 			Enum = 501,
-			Tree = tree
+			Tree = table.freeze(table.clone(tree))
 		}
 	end,
 	KeyValuePair = function(keyValue, valueType) --/* Key and value pair for dictionary trees, the value can be set to a DictionaryTree */
 		assert(type(keyValue) == "string", "NaNet.KeyValuePair expected `string` for argument #1")
 		assert((type(valueType) == "table") and (valueType.Enum), "NaNet.KeyValuePair expected `NaNet.NetworkParameter` for argument #2")
-		
+
 		return table.freeze{
 			Enum = 502, 
 			KeyValue = keyValue,
@@ -485,25 +544,59 @@ local NaNet: NaNet = {
 	OptionalKeyValuePair = function(keyValue, valueType) --/* An optional version of the KeyValuePair */
 		assert(type(keyValue) == "string", "NaNet.OptionalKeyValuePair expected `string` for argument #1")
 		assert((type(valueType) == "table") and (valueType.Enum), "NaNet.OptionalKeyValuePair expected `NaNet.NetworkParameter` for argument #2")
-		
+
 		return table.freeze{
 			Enum = 503, 
 			KeyValue = keyValue,
 			ValueType = valueType
 		}
 	end,
-	
+
 	InstanceTree = function() error("Not implemented") end,
 	PropertyTree = function() error("Not implemented") end,
-	
-	--/* Value buffer */
+
+	--/* Special types */
 	Value = function(value) --/* Buffer in NaNet for any static value that isn't a type */
 		return table.freeze{
 			Enum = 1000,
 			Value = value
 		}
 	end,
-	Union = function() error("Not implemented") end,
+	Union = function(_type, merger)
+		assert((type(_type) == "table") and (_type.Enum), "NaNet.Union expected `NaNet.NetworkParameter` for argument #1")
+		assert((type(merger) == "table") and (merger.Enum), "NaNet.Union expected `NaNet.NetworkParameter` for argument #2")
+		
+		local typeData = {}
+		
+		if _type.Enum == 1001 then
+			for i,v in _type.TypeObjects :: { NetworkParameter } do 
+				table.insert(typeData, v)
+			end
+		else 
+			table.insert(typeData, _type)
+		end
+		
+		if merger.Enum == 1002 then
+			for i,v in merger.TypeObjects :: { NetworkParameter } do 
+				table.insert(typeData, v)
+			end
+		else 
+			table.insert(typeData, merger)
+		end
+				
+		return table.freeze{
+			Enum = 1001,
+			TypeObjects = table.freeze(typeData)
+		}
+	end,
+	Nullable = function(_type)
+		assert((type(_type) == "table") and (_type.Enum), "NaNet.Union expected `NaNet.NetworkParameter` for argument #1")
+		
+		return table.freeze{
+			Enum = 1002,
+			TypeObject = _type
+		}
+	end,
 
 
 	--/* Wrapper API */
@@ -553,7 +646,7 @@ local NaNet: NaNet = {
 			return listener(TypecheckParameters(parameters, ...), player, ...)
 		end
 	end,
-	
+
 	--/* Standalone API */
 	IsArray = function(parameter)
 		if type(parameter) ~= "table" then 
@@ -569,7 +662,7 @@ local NaNet: NaNet = {
 		if existingParameters ~= t.n then 
 			return false
 		end
-		
+
 		return true
 	end,
 	IsInteger = function(parameter)
@@ -579,7 +672,7 @@ local NaNet: NaNet = {
 		if math.floor(parameter) ~= parameter then 
 			return false
 		end
-		
+
 		return true
 	end,
 	IsReal = function(parameter)
@@ -589,7 +682,7 @@ local NaNet: NaNet = {
 		if parameter ~= parameter then 
 			return false
 		end
-		
+
 		return true
 	end,
 	IsRealWithinBoundary = function(parameter, minLength, maxLength)
@@ -609,7 +702,6 @@ local NaNet: NaNet = {
 			end
 		end
 
-		
 		return true
 	end,
 	IsStringSafeForDataStore = function(parameter)
@@ -619,7 +711,7 @@ local NaNet: NaNet = {
 		if (utf8.len(parameter) == nil) or (#parameter > 65536) then
 			return false
 		end
-		
+
 		return true
 	end
 }
