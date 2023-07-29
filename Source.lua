@@ -6,6 +6,7 @@ export type NetworkParameter = {
 	MaxLength: number?,
 	Typed: boolean?,
 	TypeObject: NetworkParameter?,
+	TypeName: string?,
 	Class: string?,
 	Tree: {NetworkParameter}?,
 	KeyValue: string?,
@@ -51,7 +52,8 @@ export type NaNet = {
 	TypedArray: (NetworkParameter) -> NetworkParameter,
 	ConstrainedArray: (number, number?) -> NetworkParameter,
 	ConstrainedAndTypedArray: (NetworkParameter, number, number?) -> NetworkParameter,
-
+	TypeOf: (string) -> NetworkParameter,
+	
 	DictionaryTree: ({NetworkParameter}) -> NetworkParameter,
 	KeyValuePair: (string, NetworkParameter) -> NetworkParameter,
 	OptionalKeyValuePair: (string, NetworkParameter) -> NetworkParameter,
@@ -337,7 +339,11 @@ local function TypecheckParameters(parameters: {NetworkParameter}, ...)
 			if TypecheckParameters(arrayParameters, table.unpack(t)) == false then 
 				return false
 			end
-
+		elseif _enum == 110 then --/* TypeOf */
+			if typeof(parameter) ~= _type.TypeName then
+				return false 
+			end
+			
 			--/* Tree types */
 		elseif _enum == 501 then --/* DictionaryTree */
 			if type(parameter) ~= "table" then 
@@ -489,7 +495,23 @@ local NaNet: NaNet = {
 	end,
 	TypedVararg = function(_type) --/* Special structure type that acts as a primitive, all varargs will be type-checked */
 		assert((type(_type) == "table") and (_type.Enum), "NaNet.DictionaryTree expected `NaNet.NetworkParameter` for argument #1")
+		
+		if (_type.Enum == 9) then
+			error("NaNet.ConstrainedAndTypedArray got `NaNet.Nil`, but `NaNet.Nil` is not supported as a typed vararg type")
+		end
 
+		if (_type.Enum == 11) then
+			error("NaNet.ConstrainedAndTypedArray got `NaNet.Vararg`, but `NaNet.Vararg` is not supported as a typed vararg type")
+		end
+
+		if (_type.Enum == 12) then
+			error("NaNet.ConstrainedAndTypedArray got `NaNet.Any`, but `NaNet.Any` is not supported as a typed vararg type")
+		end
+
+		if (_type.Enum == 106) then
+			error("NaNet.TypedVararg got `NaNet.TypedVararg`, but `NaNet.TypedVararg` is not supported as a typed vararg type")
+		end
+		
 		return table.freeze{
 			Enum = 106,
 			TypeObject = _type
@@ -497,7 +519,23 @@ local NaNet: NaNet = {
 	end,
 	TypedArray = function(_type) --/* Accepts any ordered array with a specific type */
 		assert((type(_type) == "table") and (_type.Enum), "NaNet.TypedArray expected `NaNet.NetworkParameter` for argument #1")
+		
+		if (_type.Enum == 9) then
+			error("NaNet.TypedArray got `NaNet.Nil`, but `NaNet.Nil` is not supported in typed arrays")
+		end
 
+		if (_type.Enum == 11) then
+			error("NaNet.TypedArray got `NaNet.Vararg`, but `NaNet.Vararg` is not supported in typed arrays")
+		end
+
+		if (_type.Enum == 12) then
+			error("NaNet.TypedArray got `NaNet.Any`, but `NaNet.Any` is not supported in typed arrays")
+		end
+
+		if (_type.Enum == 106) then
+			error("NaNet.TypedArray got `NaNet.TypedVararg`, but `NaNet.TypedVararg` is not supported in typed arrays")
+		end
+		
 		return table.freeze{
 			Enum = 107,
 			TypeObject = _type
@@ -513,13 +551,37 @@ local NaNet: NaNet = {
 	end,
 	ConstrainedAndTypedArray = function(_type, minLength, maxLength) --/* Accepts any ordered array with a specific type and size limit */
 		assert((type(_type) == "table") and (_type.Enum), "NaNet.ConstraintedAndTypedArray expected `NaNet.NetworkParameter` for argument #1")
+		
+		if (_type.Enum == 9) then
+			error("NaNet.ConstrainedAndTypedArray got `NaNet.Nil`, but `NaNet.Nil` is not supported in typed arrays")
+		end
 
+		if (_type.Enum == 11) then
+			error("NaNet.ConstrainedAndTypedArray got `NaNet.Vararg`, but `NaNet.Vararg` is not supported in typed arrays")
+		end
+
+		if (_type.Enum == 12) then
+			error("NaNet.ConstrainedAndTypedArray got `NaNet.Any`, but `NaNet.Any` is not supported in typed arrays")
+		end
+
+		if (_type.Enum == 106) then
+			error("NaNet.ConstrainedAndTypedArray got `NaNet.TypedVararg`, but `NaNet.TypedVararg` is not supported in typed arrays")
+		end
+		
 		assert(type(minLength) == "number", "NaNet.ConstraintedArray expected `number` for argument #2")
 		if maxLength then 
 			assert(type(maxLength) == "number", "NaNet.ConstraintedArray expected `number` for argument #3")
 		end
 
 		return CreateRangeType(109, minLength, maxLength, _type)
+	end,
+	TypeOf = function(__type)
+		assert(type(__type) == "string", "NaNet.Typeof expected `string` for argument #1")
+		
+		return table.freeze{
+			Enum = 110,
+			TypeName = __type
+		}
 	end,
 
 	--/* Tree types 501 - 999 */
@@ -534,7 +596,19 @@ local NaNet: NaNet = {
 	KeyValuePair = function(keyValue, valueType) --/* Key and value pair for dictionary trees, the value can be set to a DictionaryTree */
 		assert(type(keyValue) == "string", "NaNet.KeyValuePair expected `string` for argument #1")
 		assert((type(valueType) == "table") and (valueType.Enum), "NaNet.KeyValuePair expected `NaNet.NetworkParameter` for argument #2")
+		
+		if (valueType.Enum == 9) then
+			error("NaNet.KeyValuePair got `NaNet.Nil`, but `NaNet.Nil` is not supported in key value pairs")
+		end
 
+		if (valueType.Enum == 11) then
+			error("NaNet.KeyValuePair got `NaNet.Vararg`, but `NaNet.Vararg` is not supported in key value pairs")
+		end
+
+		if (valueType.Enum == 106) then
+			error("NaNet.KeyValuePair got `NaNet.TypedVararg`, but `NaNet.TypedVararg` is not supported in key value pairs")
+		end
+		
 		return table.freeze{
 			Enum = 502, 
 			KeyValue = keyValue,
@@ -544,7 +618,19 @@ local NaNet: NaNet = {
 	OptionalKeyValuePair = function(keyValue, valueType) --/* An optional version of the KeyValuePair */
 		assert(type(keyValue) == "string", "NaNet.OptionalKeyValuePair expected `string` for argument #1")
 		assert((type(valueType) == "table") and (valueType.Enum), "NaNet.OptionalKeyValuePair expected `NaNet.NetworkParameter` for argument #2")
+		
+		if (valueType.Enum == 9) then
+			error("NaNet.OptionalKeyValuePair got `NaNet.Nil`, but `NaNet.Nil` is not supported in optional key value pairs")
+		end
 
+		if (valueType.Enum == 11) then
+			error("NaNet.OptionalKeyValuePair got `NaNet.Vararg`, but `NaNet.Vararg` is not supported in optional key value pairs")
+		end
+
+		if (valueType.Enum == 106) then
+			error("NaNet.OptionalKeyValuePair got `NaNet.TypedVararg`, but `NaNet.TypedVararg` is not supported in optional key value pairs")
+		end
+		
 		return table.freeze{
 			Enum = 503, 
 			KeyValue = keyValue,
@@ -565,6 +651,22 @@ local NaNet: NaNet = {
 	Union = function(_type, merger)
 		assert((type(_type) == "table") and (_type.Enum), "NaNet.Union expected `NaNet.NetworkParameter` for argument #1")
 		assert((type(merger) == "table") and (merger.Enum), "NaNet.Union expected `NaNet.NetworkParameter` for argument #2")
+		
+		if (_type.Enum == 9) then
+			error("NaNet.Union got `NaNet.Nil`, but `NaNet.Nil` is not supported in unions")
+		end
+		
+		if (_type.Enum == 11) then
+			error("NaNet.Union got `NaNet.Vararg`, but `NaNet.Vararg` is not supported in unions")
+		end
+		
+		if (_type.Enum == 12) then
+			error("NaNet.Union got `NaNet.Any`, but `NaNet.Any` is not supported in unions")
+		end
+		
+		if (_type.Enum == 106) then
+			error("NaNet.Union got `NaNet.TypedVararg`, but `NaNet.TypedVararg` is not supported in unions")
+		end
 		
 		local typeData = {}
 		
@@ -591,6 +693,22 @@ local NaNet: NaNet = {
 	end,
 	Nullable = function(_type)
 		assert((type(_type) == "table") and (_type.Enum), "NaNet.Union expected `NaNet.NetworkParameter` for argument #1")
+		
+		if (_type.Enum == 9) then
+			error("NaNet.Nullable got `NaNet.Nil`, but `NaNet.Nil` cant be nullable")
+		end
+
+		if (_type.Enum == 11) then
+			error("NaNet.Nullable got `NaNet.Vararg`, but `NaNet.Vararg` cant be nullable")
+		end
+
+		if (_type.Enum == 12) then
+			error("NaNet.Nullable got `NaNet.Any`, but `NaNet.Any` cant be nullable")
+		end
+
+		if (_type.Enum == 106) then
+			error("NaNet.Nullable got `NaNet.TypedVararg`, but `NaNet.TypedVararg` cant be nullable")
+		end
 		
 		return table.freeze{
 			Enum = 1002,
