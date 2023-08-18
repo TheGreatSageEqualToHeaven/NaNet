@@ -258,7 +258,7 @@ local function TypecheckParameters(parameters: {NetworkParameter}, ...)
 			if type(parameter) ~= "string" then 
 				return false 
 			end
-			if (utf8.len(parameter) == nil) or (#parameter > 65536) then
+			if string.match(input, "[^\0-\127]") or (#parameter > 65536) then
 				return false
 			end
 		elseif _enum == 104 then --/* ConstrainedReal */
@@ -826,7 +826,7 @@ local NaNet: NaNet = {
 		if type(parameter) ~= "string" then 
 			return false 
 		end
-		if (utf8.len(parameter) == nil) or (#parameter > 65536) then
+		if string.match(input, "[^\0-\127]") or (#parameter > 65536) then
 			return false
 		end
 
